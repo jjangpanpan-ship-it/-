@@ -1,0 +1,327 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>우리 반 알리미</title>
+<style>
+  :root{
+    --bg:#f4f6fb; --card:#ffffff; --text:#1c2230; --muted:#6b7488; --line:#e3e7f0;
+    --primary:#3b6df0; --primary-soft:#e8eefe;
+    --red:#e5484d; --red-soft:#fdeceb; --orange:#e08a1e; --orange-soft:#fdf3e1;
+    --green:#2f9e6b; --green-soft:#e4f5ec; --gray-soft:#eef0f5;
+    --radius:14px;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{
+      --bg:#0f131c; --card:#171c28; --text:#e8ecf5; --muted:#8e98ad; --line:#272e3d;
+      --primary:#6e93ff; --primary-soft:#1e2a4a;
+      --red:#ff6b6f; --red-soft:#3a1d20; --orange:#f2a540; --orange-soft:#3a2d17;
+      --green:#4cc38a; --green-soft:#15302386; --gray-soft:#202638;
+    }
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Noto Sans KR","Malgun Gothic",sans-serif;
+    line-height:1.5;-webkit-text-size-adjust:100%}
+  .wrap{max-width:760px;margin:0 auto;padding:0 16px 90px}
+  header{padding:22px 0 12px}
+  header h1{margin:0;font-size:22px}
+  header .sub{color:var(--muted);font-size:14px;margin-top:2px}
+  .notice{background:var(--primary-soft);color:var(--primary);border-radius:12px;padding:10px 14px;font-size:14px;margin:8px 0 4px}
+  nav{position:fixed;left:0;right:0;bottom:0;background:var(--card);border-top:1px solid var(--line);
+    display:flex;justify-content:center;z-index:10;padding-bottom:env(safe-area-inset-bottom)}
+  nav .inner{display:flex;width:100%;max-width:760px}
+  nav button{flex:1;border:0;background:none;padding:10px 0 9px;font:inherit;font-size:12px;color:var(--muted);cursor:pointer}
+  nav button .ic{display:block;font-size:20px;line-height:1.2}
+  nav button.on{color:var(--primary);font-weight:700}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:16px;margin:12px 0}
+  .card h2{margin:0 0 10px;font-size:16px;display:flex;align-items:center;gap:8px;justify-content:space-between}
+  .card h2 small{font-weight:400;color:var(--muted);font-size:13px}
+  .empty{color:var(--muted);font-size:14px;padding:6px 0}
+  /* 시간표 목록 */
+  .period{display:flex;align-items:center;gap:12px;padding:9px 10px;border-radius:10px}
+  .period + .period{margin-top:2px}
+  .period .no{width:46px;font-size:13px;color:var(--muted);flex:none}
+  .period .sub{font-weight:600;flex:1}
+  .period .tm{font-size:12px;color:var(--muted)}
+  .period.now{background:var(--primary-soft)}
+  .period.now .sub{color:var(--primary)}
+  .period.changed .sub::after{content:" 변경";font-size:11px;color:var(--orange);background:var(--orange-soft);border-radius:6px;padding:1px 6px;margin-left:6px;font-weight:600}
+  .badge{display:inline-block;font-size:12px;font-weight:700;border-radius:8px;padding:2px 8px;white-space:nowrap}
+  .b-red{background:var(--red-soft);color:var(--red)}
+  .b-orange{background:var(--orange-soft);color:var(--orange)}
+  .b-blue{background:var(--primary-soft);color:var(--primary)}
+  .b-gray{background:var(--gray-soft);color:var(--muted)}
+  .b-green{background:var(--green-soft);color:var(--green)}
+  /* 수행평가 */
+  .item{display:flex;gap:12px;padding:12px 0;border-top:1px solid var(--line)}
+  .item:first-of-type{border-top:0}
+  .item .dd{flex:none;width:58px;text-align:center}
+  .item .body{flex:1;min-width:0}
+  .item .t{font-weight:700}
+  .item .meta{font-size:13px;color:var(--muted);margin-top:1px}
+  .item .det{font-size:14px;margin-top:4px}
+  .item.past{opacity:.55}
+  .chips{display:flex;flex-wrap:wrap;gap:6px;margin:4px 0 8px}
+  .chip{border:1px solid var(--line);background:var(--card);color:var(--text);border-radius:999px;padding:5px 12px;font:inherit;font-size:13px;cursor:pointer}
+  .chip.on{background:var(--primary);border-color:var(--primary);color:#fff}
+  .opt{font-size:13px;color:var(--muted);display:flex;align-items:center;gap:6px;margin:6px 0}
+  /* 준비물 */
+  .sup{padding:8px 0;border-top:1px solid var(--line)}
+  .sup:first-of-type{border-top:0}
+  .sup .sj{font-weight:700;font-size:14px;margin-bottom:4px}
+  label.chk{display:flex;align-items:center;gap:8px;padding:4px 0;font-size:15px;cursor:pointer}
+  label.chk input{width:18px;height:18px;accent-color:var(--primary)}
+  label.chk input:checked + span{text-decoration:line-through;color:var(--muted)}
+  /* 주간 시간표 표 */
+  .tbl-wrap{overflow-x:auto}
+  table.tt{width:100%;border-collapse:separate;border-spacing:3px;min-width:420px;table-layout:fixed}
+  table.tt th,table.tt td{text-align:center;padding:9px 2px;border-radius:9px;font-size:14px}
+  table.tt thead th{background:none;font-size:13px;color:var(--muted);font-weight:600}
+  table.tt thead th small{display:block;font-weight:400;font-size:11px}
+  table.tt thead th.today{color:var(--primary);font-weight:800}
+  table.tt tbody th{width:52px;font-size:12px;color:var(--muted);font-weight:600}
+  table.tt tbody th small{display:block;font-weight:400;font-size:10px}
+  table.tt td{background:var(--gray-soft);font-weight:600}
+  table.tt td.today{background:var(--primary-soft)}
+  table.tt td.now{background:var(--primary);color:#fff}
+  table.tt td.changed{background:var(--orange-soft);color:var(--orange)}
+  table.tt td.blank{background:none}
+  table.tt tr.lunch td{background:none;color:var(--muted);font-weight:400;font-size:12px;padding:3px}
+  .weeknav{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+  .weeknav button{border:1px solid var(--line);background:var(--card);color:var(--text);border-radius:10px;padding:6px 12px;font:inherit;font-size:13px;cursor:pointer}
+  .weeknav span{font-weight:700;font-size:14px}
+  .changes{font-size:13px;margin-top:10px;color:var(--muted)}
+  footer{color:var(--muted);font-size:12px;text-align:center;margin-top:24px}
+  [hidden]{display:none!important}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1 id="title">우리 반 알리미</h1>
+    <div class="sub" id="today"></div>
+    <div class="notice" id="notice" hidden></div>
+  </header>
+  <main id="view"></main>
+  <footer id="foot"></footer>
+</div>
+
+<nav><div class="inner" id="nav">
+  <button data-tab="home"><span class="ic">🏠</span>홈</button>
+  <button data-tab="timetable"><span class="ic">🗓️</span>시간표</button>
+  <button data-tab="assess"><span class="ic">📝</span>수행평가</button>
+  <button data-tab="supply"><span class="ic">🎒</span>준비물</button>
+</div></nav>
+
+<script src="data.js"></script>
+<script>
+"use strict";
+const DAYS = ["일","월","화","수","목","금","토"];
+const state = { tab: "home", subject: "전체", showPast: false, weekOffset: 0 };
+
+/* ---------- 유틸 ---------- */
+function esc(s){ return String(s == null ? "" : s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
+function parseDate(s){ const [y,m,d] = s.split("-").map(Number); return new Date(y, m-1, d); }
+function fmtDate(d){ return d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0") + "-" + String(d.getDate()).padStart(2,"0"); }
+function startOfDay(d){ return new Date(d.getFullYear(), d.getMonth(), d.getDate()); }
+function diffDays(a, b){ return Math.round((startOfDay(a) - startOfDay(b)) / 864e5); }
+function addDays(d, n){ const x = new Date(d); x.setDate(x.getDate() + n); return x; }
+function korDate(d){ return (d.getMonth()+1) + "월 " + d.getDate() + "일 (" + DAYS[d.getDay()] + ")"; }
+function ddayLabel(n){ return n === 0 ? "D-DAY" : n > 0 ? "D-" + n : "D+" + (-n); }
+function ddayClass(n){ return n < 0 ? "b-gray" : n <= 3 ? "b-red" : n <= 7 ? "b-orange" : "b-blue"; }
+function toMin(t){ const [h,m] = t.split(":").map(Number); return h*60 + m; }
+function nextSchoolDay(from){ let d = addDays(from, 1); while (d.getDay() === 0 || d.getDay() === 6) d = addDays(d, 1); return d; }
+
+function getDaySchedule(date){
+  const base = (TIMETABLE[DAYS[date.getDay()]] || []).map(s => ({ subject: s, changed: false, note: "" }));
+  const key = fmtDate(date);
+  CHANGES.filter(c => c.date === key).forEach(c => {
+    const i = c.period - 1;
+    while (base.length <= i) base.push({ subject: "", changed: false, note: "" });
+    base[i] = { subject: c.subject, changed: true, note: c.note || "" };
+  });
+  return base;
+}
+function currentPeriod(now){
+  const m = now.getHours()*60 + now.getMinutes();
+  for (let i = 0; i < PERIOD_TIMES.length; i++){
+    if (m >= toMin(PERIOD_TIMES[i][0]) && m <= toMin(PERIOD_TIMES[i][1])) return i;
+  }
+  return -1;
+}
+function suppliesOn(date){ const k = fmtDate(date); return SUPPLIES.filter(s => s.date === k); }
+
+/* 체크 상태 저장 (내 기기에만 저장) */
+function loadChecked(){ try { return JSON.parse(localStorage.getItem("supplyChecked") || "{}"); } catch(e){ return {}; } }
+function saveChecked(o){ try { localStorage.setItem("supplyChecked", JSON.stringify(o)); } catch(e){} }
+
+/* ---------- 조각 렌더링 ---------- */
+function renderPeriodList(date, now, highlightNow){
+  const list = getDaySchedule(date);
+  if (!list.length) return '<div class="empty">시간표가 없는 날이에요.</div>';
+  const cur = highlightNow ? currentPeriod(now) : -1;
+  return list.map((p, i) => {
+    const t = PERIOD_TIMES[i];
+    return '<div class="period' + (i === cur ? " now" : "") + (p.changed ? " changed" : "") + '">' +
+      '<div class="no">' + (i+1) + '교시</div>' +
+      '<div class="sub">' + esc(p.subject || "-") + (p.note ? ' <span class="tm">(' + esc(p.note) + ')</span>' : "") + '</div>' +
+      '<div class="tm">' + (t ? t[0] + " ~ " + t[1] : "") + '</div></div>';
+  }).join("");
+}
+function renderSupplyBlocks(items, checked){
+  if (!items.length) return '<div class="empty">등록된 준비물이 없어요.</div>';
+  return items.map(s => '<div class="sup"><div class="sj">' + esc(s.subject) + '</div>' +
+    s.items.map(it => {
+      const key = s.date + "|" + s.subject + "|" + it;
+      return '<label class="chk"><input type="checkbox" data-key="' + esc(key) + '"' + (checked[key] ? " checked" : "") + '><span>' + esc(it) + '</span></label>';
+    }).join("") + '</div>').join("");
+}
+function renderAssessItem(a, today){
+  const n = diffDays(parseDate(a.date), today);
+  return '<div class="item' + (n < 0 ? " past" : "") + '">' +
+    '<div class="dd"><span class="badge ' + ddayClass(n) + '">' + ddayLabel(n) + '</span></div>' +
+    '<div class="body"><div class="t">' + esc(a.subject) + ' · ' + esc(a.title) + '</div>' +
+    '<div class="meta">' + korDate(parseDate(a.date)) + (a.score ? " · 배점 " + esc(a.score) + "점" : "") + '</div>' +
+    (a.detail ? '<div class="det">' + esc(a.detail) + '</div>' : "") + '</div></div>';
+}
+
+/* ---------- 탭별 화면 ---------- */
+function viewHome(now){
+  const checked = loadChecked();
+  const today = startOfDay(now);
+  const tomorrow = nextSchoolDay(today);
+  const isWeekday = now.getDay() >= 1 && now.getDay() <= 5;
+  const upcoming = ASSESSMENTS.filter(a => diffDays(parseDate(a.date), today) >= 0)
+    .sort((a,b) => a.date.localeCompare(b.date)).slice(0, 4);
+  const tmrLabel = diffDays(tomorrow, today) === 1 ? "내일" : "다음 등교일";
+
+  return '' +
+    '<div class="card"><h2>오늘 시간표 <small>' + korDate(today) + '</small></h2>' +
+      (isWeekday ? renderPeriodList(today, now, true) : '<div class="empty">오늘은 쉬는 날이에요 😴</div>') + '</div>' +
+    '<div class="card"><h2>' + tmrLabel + ' 준비물 <small>' + korDate(tomorrow) + '</small></h2>' +
+      renderSupplyBlocks(suppliesOn(tomorrow), checked) + '</div>' +
+    '<div class="card"><h2>다가오는 수행평가 <small>가까운 순</small></h2>' +
+      (upcoming.length ? upcoming.map(a => renderAssessItem(a, today)).join("") : '<div class="empty">예정된 수행평가가 없어요 🎉</div>') + '</div>' +
+    '<div class="card"><h2>' + tmrLabel + ' 시간표 <small>' + korDate(tomorrow) + '</small></h2>' +
+      renderPeriodList(tomorrow, now, false) + '</div>';
+}
+
+function viewTimetable(now){
+  const today = startOfDay(now);
+  const dow = today.getDay();
+  let monday;
+  if (dow === 0) monday = addDays(today, 1);
+  else if (dow === 6) monday = addDays(today, 2);
+  else monday = addDays(today, -(dow - 1));
+  monday = addDays(monday, state.weekOffset * 7);
+  const days = [0,1,2,3,4].map(i => addDays(monday, i));
+  const schedules = days.map(getDaySchedule);
+  const maxP = Math.max(PERIOD_TIMES.length, ...schedules.map(s => s.length));
+  const cur = currentPeriod(now);
+  const todayKey = fmtDate(today);
+
+  let html = '<div class="card">' +
+    '<div class="weeknav"><button data-week="-1">‹ 이전 주</button><span>' +
+      (monday.getMonth()+1) + '/' + monday.getDate() + ' ~ ' + (days[4].getMonth()+1) + '/' + days[4].getDate() +
+      (state.weekOffset === 0 ? " (이번 주)" : "") + '</span><button data-week="1">다음 주 ›</button></div>' +
+    '<div class="tbl-wrap"><table class="tt"><thead><tr><th></th>' +
+    days.map(d => '<th class="' + (fmtDate(d) === todayKey ? "today" : "") + '">' + DAYS[d.getDay()] + '<small>' + (d.getMonth()+1) + '/' + d.getDate() + '</small></th>').join("") +
+    '</tr></thead><tbody>';
+
+  for (let p = 0; p < maxP; p++){
+    const t = PERIOD_TIMES[p];
+    html += '<tr><th>' + (p+1) + '교시' + (t ? '<small>' + t[0] + '</small>' : "") + '</th>';
+    for (let c = 0; c < 5; c++){
+      const cell = schedules[c][p];
+      if (!cell || !cell.subject){ html += '<td class="blank"></td>'; continue; }
+      const isToday = fmtDate(days[c]) === todayKey;
+      const cls = cell.changed ? "changed" : (isToday && p === cur ? "now" : (isToday ? "today" : ""));
+      html += '<td class="' + cls + '">' + esc(cell.subject) + '</td>';
+    }
+    html += '</tr>';
+    if (LUNCH_AFTER && p + 1 === LUNCH_AFTER) html += '<tr class="lunch"><td colspan="6">🍚 점심시간</td></tr>';
+  }
+  html += '</tbody></table></div>';
+
+  const weekChanges = CHANGES.filter(c => { const n = diffDays(parseDate(c.date), monday); return n >= 0 && n <= 4; });
+  if (weekChanges.length){
+    html += '<div class="changes"><b>시간표 변경</b><br>' + weekChanges.map(c =>
+      korDate(parseDate(c.date)) + ' ' + c.period + '교시 → ' + esc(c.subject) + (c.note ? " (" + esc(c.note) + ")" : "")).join("<br>") + '</div>';
+  }
+  return html + '</div>';
+}
+
+function viewAssess(now){
+  const today = startOfDay(now);
+  const subjects = ["전체"].concat(Array.from(new Set(ASSESSMENTS.map(a => a.subject))));
+  let list = ASSESSMENTS.slice().sort((a,b) => a.date.localeCompare(b.date));
+  if (state.subject !== "전체") list = list.filter(a => a.subject === state.subject);
+  if (!state.showPast) list = list.filter(a => diffDays(parseDate(a.date), today) >= 0);
+
+  return '<div class="card"><h2>수행평가 <small>총 ' + list.length + '건</small></h2>' +
+    '<div class="chips">' + subjects.map(s => '<button class="chip' + (s === state.subject ? " on" : "") + '" data-subject="' + esc(s) + '">' + esc(s) + '</button>').join("") + '</div>' +
+    '<label class="opt"><input type="checkbox" id="past"' + (state.showPast ? " checked" : "") + '> 지난 수행평가도 보기</label>' +
+    (list.length ? list.map(a => renderAssessItem(a, today)).join("") : '<div class="empty">표시할 수행평가가 없어요.</div>') + '</div>';
+}
+
+function viewSupply(now){
+  const today = startOfDay(now);
+  const checked = loadChecked();
+  const dates = Array.from(new Set(SUPPLIES.map(s => s.date))).filter(d => diffDays(parseDate(d), today) >= 0).sort();
+  if (!dates.length) return '<div class="card"><h2>준비물</h2><div class="empty">예정된 준비물이 없어요.</div></div>';
+  return dates.map(d => {
+    const dt = parseDate(d), n = diffDays(dt, today);
+    return '<div class="card"><h2>' + korDate(dt) + ' <span class="badge ' + ddayClass(n) + '">' + ddayLabel(n) + '</span></h2>' +
+      renderSupplyBlocks(SUPPLIES.filter(s => s.date === d), checked) + '</div>';
+  }).join("") + '<div class="empty" style="text-align:center">체크 표시는 이 기기에만 저장돼요.</div>';
+}
+
+/* ---------- 전체 렌더 ---------- */
+function render(){
+  const now = new Date();
+  document.getElementById("title").textContent = CLASS_INFO.name + " 알리미";
+  document.title = CLASS_INFO.name + " 알리미";
+  document.getElementById("today").textContent = korDate(now) + " · " + String(now.getHours()).padStart(2,"0") + ":" + String(now.getMinutes()).padStart(2,"0") + " 기준";
+  const nt = document.getElementById("notice");
+  nt.hidden = !CLASS_INFO.notice;
+  nt.textContent = "📢 " + (CLASS_INFO.notice || "");
+  document.getElementById("foot").textContent = "담당: " + CLASS_INFO.manager;
+
+  const views = { home: viewHome, timetable: viewTimetable, assess: viewAssess, supply: viewSupply };
+  document.getElementById("view").innerHTML = (views[state.tab] || viewHome)(now);
+  document.querySelectorAll("#nav button").forEach(b => b.classList.toggle("on", b.dataset.tab === state.tab));
+}
+
+/* ---------- 이벤트 ---------- */
+document.getElementById("nav").addEventListener("click", e => {
+  const b = e.target.closest("button[data-tab]");
+  if (!b) return;
+  state.tab = b.dataset.tab;
+  try { history.replaceState(null, "", "#" + state.tab); } catch(err){}
+  render(); window.scrollTo(0, 0);
+});
+document.getElementById("view").addEventListener("click", e => {
+  const chip = e.target.closest("[data-subject]");
+  if (chip){ state.subject = chip.dataset.subject; render(); return; }
+  const wk = e.target.closest("[data-week]");
+  if (wk){ state.weekOffset += Number(wk.dataset.week); render(); }
+});
+document.getElementById("view").addEventListener("change", e => {
+  if (e.target.id === "past"){ state.showPast = e.target.checked; render(); return; }
+  if (e.target.dataset && e.target.dataset.key){
+    const o = loadChecked();
+    if (e.target.checked) o[e.target.dataset.key] = true; else delete o[e.target.dataset.key];
+    saveChecked(o);
+    render(); // 같은 항목이 다른 카드에도 있으면 함께 갱신
+  }
+});
+
+const hash = location.hash.replace("#", "");
+if (["home","timetable","assess","supply"].includes(hash)) state.tab = hash;
+render();
+setInterval(render, 60000); // 1분마다 현재 교시/시간 갱신
+</script>
+</body>
+</html>
