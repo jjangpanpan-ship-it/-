@@ -1,8 +1,8 @@
 /* =====================================================
    우리 반 알리미 - 데이터 파일
    이 파일만 고치면 사이트 내용이 바뀝니다.
-   (아래는 모두 예시입니다. 우리 반 내용으로 바꿔 주세요!)
    날짜는 반드시 "YYYY-MM-DD" 형식으로 적어요.
+   글자는 항상 따옴표("")로 감싸고, 항목 사이엔 쉼표(,)를 꼭 넣어요.
    ===================================================== */
 
 // 1) 기본 정보
@@ -38,18 +38,18 @@ const TIMETABLE = {
 //    period: 몇 교시인지 / subject: 바뀐 과목 / note: 사유(선택)
 const CHANGES = [
   { date: "2026-10-13", period: 1, subject: "국어", note: "기술 <> 국어 교환" },
-   { date: "2026-10-15", period: 1, subject: "과학B", note: "기술 <> 과학B 교환" },
-   { date: "2026-10-15", period: 5, subject: "기술", note: "기술 <> 과학B 교환" }
+  { date: "2026-10-15", period: 1, subject: "과학B", note: "기술 <> 과학B 교환" },
+  { date: "2026-10-15", period: 5, subject: "기술", note: "기술 <> 과학B 교환" }
 ];
 
 // 5) 수행평가
-//    score: 배점(선택), detail: 설명(선택)
+//    score: 배점(숫자, 선택), detail: 설명(선택)
 const ASSESSMENTS = [
   { date: "2026-10-13", subject: "미술", title: "명화 그리기", detail: "명화 프린트 필요" },
-  { date: "2026-10-14", subject: "과학A", title: "소화/순환계 발표", score: 5(발표점수) },
+  { date: "2026-10-14", subject: "과학A", title: "소화/순환계 발표", score: 5, detail: "발표점수" },
   { date: "2026-10-14", subject: "한문", title: "자전찾기", score: 12, detail: "한자 10개의 뜻/음/부수/획수 쓰기, 제한시간 30분" },
   { date: "2026-10-17", subject: "체육", title: "플로어볼", score: 40, detail: "화, 목요일 체육시간에도 수행평가 응시 가능" },
-  { date: "2026-10-17", subject: "국어", title: "단어 찾기", score: 수행 아님, detail: "범위: 예술어휘까지, 부모님 사인 받아오기" },
+  { date: "2026-10-17", subject: "국어", title: "단어 찾기", detail: "수행평가 아님 / 범위: 예술어휘까지, 부모님 사인 받아오기" },
   { date: "2026-10-14", subject: "가정", title: "영양소 마블 만들기", detail: "참고할 것[선택] 가져오기" }
 ];
 
@@ -57,4 +57,5 @@ const ASSESSMENTS = [
 const SUPPLIES = [
   { date: "2026-10-13", subject: "미술", items: ["명화 프린트"] },
   { date: "2026-10-14", subject: "과학A", items: ["발표 전 외울 종이(선택)"] },
-   { date: "2026-10-14", subject: "가정", items: ["영양소 마블 만들때 참고할 자료(선택)"] }
+  { date: "2026-10-14", subject: "가정", items: ["영양소 마블 만들때 참고할 자료(선택)"] }
+];
