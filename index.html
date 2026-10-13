@@ -100,6 +100,10 @@
   .meal li small{color:var(--muted);font-size:11px;margin-left:6px}
   .meal .cal{font-size:12px;color:var(--muted);margin-left:6px}
   .meal-note{font-size:12px;color:var(--muted);margin-top:8px}
+  .pre{white-space:pre-wrap;word-break:break-word}
+  .item a{color:var(--primary)}
+  .vh{margin-top:12px;padding-top:10px;border-top:1px solid var(--line)}
+  .vh ul{margin:6px 0 0;padding-left:20px;font-size:14px}
   .mrow{display:flex;gap:12px;padding:10px 0;border-top:1px solid var(--line)}
   .mrow .md{flex:none;width:70px;font-weight:700;font-size:14px}
   .mrow .mb{flex:1;min-width:0;font-size:14px;line-height:1.6}
@@ -125,6 +129,7 @@
   <button data-tab="assess"><span class="ic">📝</span>수행평가</button>
   <button data-tab="supply"><span class="ic">🎒</span>준비물</button>
   <button data-tab="meal"><span class="ic">🍚</span>급식</button>
+  <button data-tab="etc"><span class="ic">📢</span>기타</button>
 </div></nav>
 
 <script src="data.js"></script>
@@ -430,6 +435,51 @@ function viewMeal(now){
     '출처: 나이스 교육정보 개방 포털</div></div>';
 }
 
+/* ---------- 기타 탭 (공지사항 + 버전 정보) ---------- */
+function safeUrl(u){ return /^https?:\/\//i.test(u || "") ? u : ""; }
+
+function viewEtc(now){
+  const today = startOfDay(now);
+  let html = "";
+
+  // 기타 공지사항
+  if (typeof NOTICES === "undefined" || !Array.isArray(NOTICES)){
+    html += '<div class="card"><h2>기타 공지사항</h2><div class="empty">data.js 에 NOTICES 블록을 추가하면 공지가 보여요.</div></div>';
+  } else {
+    const list = NOTICES.slice().sort((a, b) => {
+      if (!!b.important !== !!a.important) return b.important ? 1 : -1;
+      return String(b.date || "").localeCompare(String(a.date || ""));
+    });
+    html += '<div class="card"><h2>기타 공지사항 <small>총 ' + list.length + '건</small></h2>' +
+      (list.length ? list.map(n => {
+        const hasDate = /^\d{4}-\d{2}-\d{2}$/.test(n.date || "");
+        const isNew = hasDate && diffDays(today, parseDate(n.date)) <= 2 && diffDays(today, parseDate(n.date)) >= 0;
+        const url = safeUrl(n.link);
+        return '<div class="item"><div class="dd"><span class="badge ' + (n.important ? "b-red" : "b-gray") + '">' + (n.important ? "중요" : "공지") + '</span></div>' +
+          '<div class="body"><div class="t">' + esc(n.title) + (isNew ? ' <span class="badge b-orange">NEW</span>' : "") + '</div>' +
+          (hasDate ? '<div class="meta">' + korDate(parseDate(n.date)) + '</div>' : "") +
+          (n.content ? '<div class="det pre">' + esc(n.content) + '</div>' : "") +
+          (url ? '<div class="det"><a href="' + esc(url) + '" target="_blank" rel="noopener">자세히 보기 ›</a></div>' : "") +
+          '</div></div>';
+      }).join("") : '<div class="empty">등록된 공지가 없어요.</div>') + '</div>';
+  }
+
+  // 버전 정보
+  if (typeof VERSION_INFO === "undefined"){
+    html += '<div class="card"><h2>버전 정보</h2><div class="empty">data.js 에 VERSION_INFO 블록을 추가하면 버전 정보가 보여요.</div></div>';
+  } else {
+    const v = VERSION_INFO;
+    html += '<div class="card"><h2>버전 정보 <small>v' + esc(v.version) + '</small></h2>' +
+      (v.updated ? '<div class="meta">최근 업데이트: ' + esc(v.updated) + '</div>' : "") +
+      (v.description ? '<div class="det pre">' + esc(v.description) + '</div>' : "") +
+      (Array.isArray(v.history) ? v.history.map(h =>
+        '<div class="vh"><b>v' + esc(h.version) + '</b> <span class="tm">' + esc(h.date || "") + '</span>' +
+        (Array.isArray(h.changes) ? '<ul>' + h.changes.map(c => '<li>' + esc(c) + '</li>').join("") + '</ul>' : "") + '</div>').join("") : "") +
+      '</div>';
+  }
+  return html;
+}
+
 /* ---------- 전체 렌더 ---------- */
 function render(){
   const now = new Date();
@@ -439,9 +489,10 @@ function render(){
   const nt = document.getElementById("notice");
   nt.hidden = !CLASS_INFO.notice;
   nt.textContent = "📢 " + (CLASS_INFO.notice || "");
-  document.getElementById("foot").textContent = "담당: " + CLASS_INFO.manager;
+  document.getElementById("foot").textContent = "담당: " + CLASS_INFO.manager +
+    (typeof VERSION_INFO !== "undefined" && VERSION_INFO.version ? " · v" + VERSION_INFO.version : "");
 
-  const views = { home: viewHome, timetable: viewTimetable, assess: viewAssess, supply: viewSupply, meal: viewMeal };
+  const views = { home: viewHome, timetable: viewTimetable, assess: viewAssess, supply: viewSupply, meal: viewMeal, etc: viewEtc };
   document.getElementById("view").innerHTML = (views[state.tab] || viewHome)(now);
   document.querySelectorAll("#nav button").forEach(b => b.classList.toggle("on", b.dataset.tab === state.tab));
 }
@@ -475,7 +526,7 @@ document.getElementById("view").addEventListener("change", e => {
 });
 
 const hash = location.hash.replace("#", "");
-if (["home","timetable","assess","supply","meal"].includes(hash)) state.tab = hash;
+if (["home","timetable","assess","supply","meal","etc"].includes(hash)) state.tab = hash;
 render();
 setInterval(render, 60000); // 1분마다 현재 교시/시간 갱신
 </script>
