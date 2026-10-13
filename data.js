@@ -105,7 +105,7 @@ const NOTICES = [
 
 // 버전 정보
 const VERSION_INFO = {
-  version: "V.1.1.0",
+  version: "1.1.0",
   updated: "2026-10-13",
   description: "우리 반 수행평가 알리미입니다.\n기능: 시간표 / 수행평가 / 준비물 / 급식 / 기타 공지",
   history: [  // 최신 버전을 위에 적으세요
