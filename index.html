@@ -100,6 +100,10 @@
   .meal li small{color:var(--muted);font-size:11px;margin-left:6px}
   .meal .cal{font-size:12px;color:var(--muted);margin-left:6px}
   .meal-note{font-size:12px;color:var(--muted);margin-top:8px}
+  .mrow{display:flex;gap:12px;padding:10px 0;border-top:1px solid var(--line)}
+  .mrow .md{flex:none;width:70px;font-weight:700;font-size:14px}
+  .mrow .mb{flex:1;min-width:0;font-size:14px;line-height:1.6}
+  .mrow.today{background:var(--primary-soft);border-radius:10px;padding-left:8px;padding-right:8px;border-top-color:transparent}
   .meal-note a{color:var(--primary)}
   [hidden]{display:none!important}
 </style>
@@ -120,6 +124,7 @@
   <button data-tab="timetable"><span class="ic">🗓️</span>시간표</button>
   <button data-tab="assess"><span class="ic">📝</span>수행평가</button>
   <button data-tab="supply"><span class="ic">🎒</span>준비물</button>
+  <button data-tab="meal"><span class="ic">🍚</span>급식</button>
 </div></nav>
 
 <script src="data.js"></script>
@@ -135,7 +140,7 @@ if (typeof CLASS_INFO === "undefined" || typeof TIMETABLE === "undefined" ||
   throw new Error("data.js 로딩 실패");
 }
 const DAYS = ["일","월","화","수","목","금","토"];
-const state = { tab: "home", subject: "전체", showPast: false, weekOffset: 0 };
+const state = { tab: "home", subject: "전체", showPast: false, weekOffset: 0, mealRange: "week", mealOffset: 0 };
 
 /* ---------- 유틸 ---------- */
 function esc(s){ return String(s == null ? "" : s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
@@ -205,6 +210,20 @@ function renderAssessItem(a, today){
 
 /* ---------- 급식 (나이스 교육정보 개방 포털) ---------- */
 const mealCache = {};
+
+/* 한 번에 너무 많이 요청하지 않도록 동시에 4개씩만 보냄 */
+let mealActive = 0;
+const mealQueue = [];
+function queuedFetch(url){
+  return new Promise((res, rej) => { mealQueue.push({ url: url, res: res, rej: rej }); pumpMeal(); });
+}
+function pumpMeal(){
+  while (mealActive < 4 && mealQueue.length){
+    const t = mealQueue.shift();
+    mealActive++;
+    fetch(t.url).then(t.res, t.rej).finally(() => { mealActive--; pumpMeal(); });
+  }
+}
 function ymd(d){ return fmtDate(d).replace(/-/g, ""); }
 
 function loadMeal(date){
@@ -217,7 +236,7 @@ function loadMeal(date){
     "&SD_SCHUL_CODE=" + encodeURIComponent(MEAL_CONFIG.schoolCode) +
     "&MLSV_YMD=" + key;
   if (MEAL_CONFIG.apiKey) url += "&KEY=" + encodeURIComponent(MEAL_CONFIG.apiKey);
-  fetch(url).then(r => r.json()).then(j => {
+  queuedFetch(url).then(r => r.json()).then(j => {
     const root = j.mealServiceDietInfo;
     let result;
     if (root && root[1] && root[1].row){
@@ -352,6 +371,65 @@ function viewSupply(now){
   }).join("") + '<div class="empty" style="text-align:center">체크 표시는 이 기기에만 저장돼요.</div>';
 }
 
+/* ---------- 급식 탭 (주간 / 월간) ---------- */
+function mealBody(m, detailed){
+  if (m.status === "loading") return '<div class="empty">불러오는 중…</div>';
+  if (m.status === "none") return '<div class="empty">급식 없음</div>';
+  if (m.status === "error") return '<div class="empty">불러오지 못했어요</div>';
+  if (detailed){
+    return m.meals.map(x =>
+      '<div class="meal"><div><span class="badge b-green">' + esc(x.name) + '</span>' +
+      (x.cal ? '<span class="cal">' + esc(x.cal) + '</span>' : "") + '</div><ul>' +
+      parseDishes(x.dishes).map(d => '<li>' + esc(d.name) + (d.al ? '<small>(' + esc(d.al) + ')</small>' : "") + '</li>').join("") +
+      '</ul></div>').join("");
+  }
+  return m.meals.map(x =>
+    (x.name !== "중식" ? '<span class="badge b-green">' + esc(x.name) + '</span> ' : "") +
+    parseDishes(x.dishes).map(d => esc(d.name)).join(" · ")).join("<br>");
+}
+
+function viewMeal(now){
+  if (typeof MEAL_CONFIG === "undefined" || !MEAL_CONFIG.enabled){
+    return '<div class="card"><h2>급식</h2><div class="empty">data.js 에 MEAL_CONFIG 블록을 추가하면 급식이 보여요.</div></div>';
+  }
+  const today = startOfDay(now);
+  const todayKey = fmtDate(today);
+  const isWeek = state.mealRange === "week";
+  let days = [], title = "";
+
+  if (isWeek){
+    const dow = today.getDay();
+    let monday = dow === 0 ? addDays(today, 1) : dow === 6 ? addDays(today, 2) : addDays(today, -(dow - 1));
+    monday = addDays(monday, state.mealOffset * 7);
+    days = [0,1,2,3,4].map(i => addDays(monday, i));
+    title = (monday.getMonth()+1) + "/" + monday.getDate() + " ~ " + (days[4].getMonth()+1) + "/" + days[4].getDate() +
+      (state.mealOffset === 0 ? " (이번 주)" : "");
+  } else {
+    const first = new Date(today.getFullYear(), today.getMonth() + state.mealOffset, 1);
+    const last = new Date(first.getFullYear(), first.getMonth() + 1, 0).getDate();
+    for (let d = 1; d <= last; d++){
+      const x = new Date(first.getFullYear(), first.getMonth(), d);
+      if (x.getDay() !== 0 && x.getDay() !== 6) days.push(x);
+    }
+    title = first.getFullYear() + "년 " + (first.getMonth()+1) + "월" + (state.mealOffset === 0 ? " (이번 달)" : "");
+  }
+
+  const rows = days.map(d => {
+    const m = loadMeal(d);
+    const isToday = fmtDate(d) === todayKey;
+    return '<div class="mrow' + (isToday ? " today" : "") + '"><div class="md">' + (d.getMonth()+1) + '/' + d.getDate() + ' (' + DAYS[d.getDay()] + ')' +
+      (isToday ? '<br><span class="badge b-blue">오늘</span>' : "") + '</div><div class="mb">' + mealBody(m, isWeek) + '</div></div>';
+  }).join("");
+
+  return '<div class="card">' +
+    '<div class="chips"><button class="chip' + (isWeek ? " on" : "") + '" data-mrange="week">주간</button>' +
+    '<button class="chip' + (!isWeek ? " on" : "") + '" data-mrange="month">월간</button></div>' +
+    '<div class="weeknav"><button data-moff="-1">‹ 이전</button><span>' + title + '</span><button data-moff="1">다음 ›</button></div>' +
+    rows +
+    '<div class="meal-note">' + (isWeek ? '괄호 안 숫자는 알레르기 유발 식품 번호예요. ' : '알레르기 번호는 주간 보기에서 볼 수 있어요. ') +
+    '출처: 나이스 교육정보 개방 포털</div></div>';
+}
+
 /* ---------- 전체 렌더 ---------- */
 function render(){
   const now = new Date();
@@ -363,7 +441,7 @@ function render(){
   nt.textContent = "📢 " + (CLASS_INFO.notice || "");
   document.getElementById("foot").textContent = "담당: " + CLASS_INFO.manager;
 
-  const views = { home: viewHome, timetable: viewTimetable, assess: viewAssess, supply: viewSupply };
+  const views = { home: viewHome, timetable: viewTimetable, assess: viewAssess, supply: viewSupply, meal: viewMeal };
   document.getElementById("view").innerHTML = (views[state.tab] || viewHome)(now);
   document.querySelectorAll("#nav button").forEach(b => b.classList.toggle("on", b.dataset.tab === state.tab));
 }
@@ -379,6 +457,10 @@ document.getElementById("nav").addEventListener("click", e => {
 document.getElementById("view").addEventListener("click", e => {
   const chip = e.target.closest("[data-subject]");
   if (chip){ state.subject = chip.dataset.subject; render(); return; }
+  const mr = e.target.closest("[data-mrange]");
+  if (mr){ state.mealRange = mr.dataset.mrange; state.mealOffset = 0; render(); return; }
+  const mo = e.target.closest("[data-moff]");
+  if (mo){ state.mealOffset += Number(mo.dataset.moff); render(); return; }
   const wk = e.target.closest("[data-week]");
   if (wk){ state.weekOffset += Number(wk.dataset.week); render(); }
 });
@@ -393,7 +475,7 @@ document.getElementById("view").addEventListener("change", e => {
 });
 
 const hash = location.hash.replace("#", "");
-if (["home","timetable","assess","supply"].includes(hash)) state.tab = hash;
+if (["home","timetable","assess","supply","meal"].includes(hash)) state.tab = hash;
 render();
 setInterval(render, 60000); // 1분마다 현재 교시/시간 갱신
 </script>
