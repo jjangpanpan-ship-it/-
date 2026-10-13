@@ -94,6 +94,12 @@ const NOTICES = [
     date: "2026-10-13",
     title: "수행평가 알리미 V1.1.0 오픈!",
     content: "오늘/주간/월간 급식표 기능 오픈!, 기타 공지 오픈!",
+  },
+  {
+    date: "2026-10-13",
+    title: "해전 게임 사이트",
+    content: "게임이 막히면 직접 만들어라!",
+    link: https://gwebgames.github.io/ship_battle/
   }
 ];
 
