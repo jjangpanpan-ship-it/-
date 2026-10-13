@@ -45,12 +45,13 @@ const CHANGES = [
 // 5) 수행평가
 //    score: 배점(숫자, 선택), detail: 설명(선택)
 const ASSESSMENTS = [
-  { date: "2026-10-13", subject: "미술", title: "명화 그리기", detail: "명화 프린트 필요" },
+  { date: "2026-10-20", subject: "미술", title: "명화 그리기", detail: "명화 프린트 필요" },
   { date: "2026-10-14", subject: "과학A", title: "소화/순환계 발표", score: 5, detail: "발표점수" },
   { date: "2026-10-14", subject: "한문", title: "자전찾기", score: 12, detail: "한자 10개의 뜻/음/부수/획수 쓰기, 제한시간 30분" },
   { date: "2026-10-16", subject: "체육", title: "플로어볼", score: 40, detail: "화, 목요일 체육시간에도 수행평가 응시 가능" },
   { date: "2026-10-16", subject: "국어", title: "단어 찾기", detail: "수행평가 아님 / 범위: 예술어휘까지, 부모님 사인 받아오기" },
-  { date: "2026-10-14", subject: "가정", title: "영양소 마블 만들기", detail: "참고할 것[선택] 가져오기" }
+  { date: "2026-10-14", subject: "가정", title: "영양소 마블 만들기", detail: "참고할 것[선택] 가져오기" },
+   { date: "2026-10-23", subject: "수학A", title: "수행평가[서술형]", score: 20 }
 ];
 
 // 6) 준비물 (날짜별)
