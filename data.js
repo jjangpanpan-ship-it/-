@@ -60,3 +60,12 @@ const SUPPLIES = [
   { date: "2026-10-14", subject: "과학A", items: ["발표 전 외울 종이(선택)"] },
   { date: "2026-10-14", subject: "가정", items: ["영양소 마블 만들때 참고할 자료(선택)"] }
 ];
+
+// 급식 (나이스 교육정보 개방 포털)
+const MEAL_CONFIG = {
+  enabled: true,            // 급식 카드를 끄려면 false
+  officeCode: "B10",        // 서울특별시교육청
+  schoolCode: "7132125",    // 관악중학교
+  apiKey: "",               // 막히면 나이스 인증키를 여기에 (아래 참고)
+  schoolUrl: "http://gwanak.sen.ms.kr"  // 실패했을 때 보여줄 학교 링크
+};
