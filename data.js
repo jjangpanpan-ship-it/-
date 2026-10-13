@@ -69,3 +69,30 @@ const MEAL_CONFIG = {
   apiKey: "",               // 막히면 나이스 인증키를 여기에 (아래 참고)
   schoolUrl: "http://gwanak.sen.ms.kr"  // 실패했을 때 보여줄 학교 링크
 };
+// 기타 공지사항 (최신 글을 위에 적어도, 날짜순으로 자동 정렬돼요)
+// important: true 로 하면 빨간 "중요" 표시와 함께 맨 위에 고정돼요
+// content, link 는 없어도 돼요. link 는 http:// 또는 https:// 로 시작해야 해요.
+const NOTICES = [
+  {
+    date: "2026-10-13",
+    title: "수행평가 알리미 오픈!",
+    content: "시간표, 수행평가, 준비물, 급식을 한곳에서 확인하세요.\n틀린 내용이 있으면 알려주세요.",
+    important: true,
+    link: ""
+  },
+  {
+    date: "2026-10-12",
+    title: "중간고사 일정 확인",
+    content: "자세한 내용은 학교 가정통신문을 확인하세요."
+  }
+];
+
+// 버전 정보
+const VERSION_INFO = {
+  version: "1.0.0",
+  updated: "2026-10-13",
+  description: "우리 반 수행평가 알리미입니다.\n기능: 시간표 / 수행평가 / 준비물 / 급식 / 공지",
+  history: [  // 최신 버전을 위에 적으세요
+    { version: "1.0.0", date: "2026-10-13", changes: ["최초 공개", "급식 주간/월간 보기 추가", "기타 탭 추가"] }
+  ]
+};
