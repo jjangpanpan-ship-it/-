@@ -94,6 +94,13 @@
   .weeknav span{font-weight:700;font-size:14px}
   .changes{font-size:13px;margin-top:10px;color:var(--muted)}
   footer{color:var(--muted);font-size:12px;text-align:center;margin-top:24px}
+  .meal + .meal{margin-top:14px}
+  .meal ul{list-style:none;margin:6px 0 0;padding:0}
+  .meal li{padding:4px 0;font-size:15px}
+  .meal li small{color:var(--muted);font-size:11px;margin-left:6px}
+  .meal .cal{font-size:12px;color:var(--muted);margin-left:6px}
+  .meal-note{font-size:12px;color:var(--muted);margin-top:8px}
+  .meal-note a{color:var(--primary)}
   [hidden]{display:none!important}
 </style>
 </head>
@@ -118,6 +125,15 @@
 <script src="data.js"></script>
 <script>
 "use strict";
+/* data.js 를 못 읽었을 때: 빈 화면 대신 안내를 보여줌 */
+if (typeof CLASS_INFO === "undefined" || typeof TIMETABLE === "undefined" ||
+    typeof ASSESSMENTS === "undefined" || typeof SUPPLIES === "undefined" || typeof CHANGES === "undefined") {
+  document.getElementById("view").innerHTML =
+    '<div class="card"><h2>⚠️ data.js 를 읽지 못했어요</h2>' +
+    '<div class="det">data.js 안에 오타가 있거나(쉼표·따옴표·괄호 빠짐), 파일이 index.html 과 같은 폴더에 없어요.<br>' +
+    'PC에서 F12 → Console 탭의 빨간 글씨에 틀린 줄 번호가 나와요.</div></div>';
+  throw new Error("data.js 로딩 실패");
+}
 const DAYS = ["일","월","화","수","목","금","토"];
 const state = { tab: "home", subject: "전체", showPast: false, weekOffset: 0 };
 
@@ -187,6 +203,63 @@ function renderAssessItem(a, today){
     (a.detail ? '<div class="det">' + esc(a.detail) + '</div>' : "") + '</div></div>';
 }
 
+/* ---------- 급식 (나이스 교육정보 개방 포털) ---------- */
+const mealCache = {};
+function ymd(d){ return fmtDate(d).replace(/-/g, ""); }
+
+function loadMeal(date){
+  const key = ymd(date);
+  if (mealCache[key]) return mealCache[key];
+  try { const s = sessionStorage.getItem("meal-" + key); if (s){ mealCache[key] = JSON.parse(s); return mealCache[key]; } } catch(e){}
+  mealCache[key] = { status: "loading" };
+  let url = "https://open.neis.go.kr/hub/mealServiceDietInfo?Type=json&pIndex=1&pSize=10" +
+    "&ATPT_OFCDC_SC_CODE=" + encodeURIComponent(MEAL_CONFIG.officeCode) +
+    "&SD_SCHUL_CODE=" + encodeURIComponent(MEAL_CONFIG.schoolCode) +
+    "&MLSV_YMD=" + key;
+  if (MEAL_CONFIG.apiKey) url += "&KEY=" + encodeURIComponent(MEAL_CONFIG.apiKey);
+  fetch(url).then(r => r.json()).then(j => {
+    const root = j.mealServiceDietInfo;
+    let result;
+    if (root && root[1] && root[1].row){
+      result = { status: "ok", meals: root[1].row.map(r => ({ name: r.MMEAL_SC_NM, dishes: r.DDISH_NM || "", cal: r.CAL_INFO || "" })) };
+    } else if (j.RESULT && j.RESULT.CODE === "INFO-200"){
+      result = { status: "none" };
+    } else {
+      result = { status: "error" };
+    }
+    mealCache[key] = result;
+    if (result.status !== "error"){ try { sessionStorage.setItem("meal-" + key, JSON.stringify(result)); } catch(e){} }
+    render();
+  }).catch(() => { mealCache[key] = { status: "error" }; render(); });
+  return mealCache[key];
+}
+
+function parseDishes(raw){
+  return String(raw).split(/<br\s*\/?>/i).map(s => s.trim()).filter(Boolean).map(s => {
+    const m = s.match(/^(.*?)\s*\(([\d.]+)\)\s*$/);
+    const name = (m ? m[1] : s).replace(/^#/, "").trim();
+    return { name: name, al: m ? m[2].replace(/\./g, ",") : "" };
+  });
+}
+
+function mealCard(date){
+  if (typeof MEAL_CONFIG === "undefined" || !MEAL_CONFIG.enabled) return "";
+  const head = '<div class="card"><h2>오늘의 급식 <small>' + korDate(date) + '</small></h2>';
+  const link = (typeof MEAL_CONFIG.schoolUrl === "string" && MEAL_CONFIG.schoolUrl)
+    ? ' <a href="' + esc(MEAL_CONFIG.schoolUrl) + '" target="_blank" rel="noopener">학교 홈페이지</a>' : "";
+  if (date.getDay() === 0 || date.getDay() === 6) return head + '<div class="empty">주말이라 급식이 없어요 😴</div></div>';
+  const m = loadMeal(date);
+  if (m.status === "loading") return head + '<div class="empty">급식 정보를 불러오는 중…</div></div>';
+  if (m.status === "none") return head + '<div class="empty">오늘은 등록된 급식이 없어요.</div></div>';
+  if (m.status === "error") return head + '<div class="empty">급식 정보를 불러오지 못했어요.' + link + '</div></div>';
+  return head + m.meals.map(x =>
+    '<div class="meal"><div><span class="badge b-green">' + esc(x.name) + '</span>' +
+    (x.cal ? '<span class="cal">' + esc(x.cal) + '</span>' : "") + '</div><ul>' +
+    parseDishes(x.dishes).map(d => '<li>' + esc(d.name) + (d.al ? '<small>(' + esc(d.al) + ')</small>' : "") + '</li>').join("") +
+    '</ul></div>').join("") +
+    '<div class="meal-note">괄호 안 숫자는 알레르기 유발 식품 번호예요. 출처: 나이스 교육정보 개방 포털</div></div>';
+}
+
 /* ---------- 탭별 화면 ---------- */
 function viewHome(now){
   const checked = loadChecked();
@@ -200,6 +273,7 @@ function viewHome(now){
   return '' +
     '<div class="card"><h2>오늘 시간표 <small>' + korDate(today) + '</small></h2>' +
       (isWeekday ? renderPeriodList(today, now, true) : '<div class="empty">오늘은 쉬는 날이에요 😴</div>') + '</div>' +
+    mealCard(today) +
     '<div class="card"><h2>' + tmrLabel + ' 준비물 <small>' + korDate(tomorrow) + '</small></h2>' +
       renderSupplyBlocks(suppliesOn(tomorrow), checked) + '</div>' +
     '<div class="card"><h2>다가오는 수행평가 <small>가까운 순</small></h2>' +
