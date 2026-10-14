@@ -99,7 +99,7 @@ const NOTICES = [
     date: "2026-10-13",
     title: "해전 게임 사이트",
     content: "게임이 막히면 직접 만들어라!",
-    link: "https://gwebgames.github.io/ship_battle/"
+    link: "https://gwebgames.github.io/webgames/"
   }
 ];
 
