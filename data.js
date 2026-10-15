@@ -101,6 +101,12 @@ const NOTICES = [
     title: "해전 게임 사이트",
     content: "게임이 막히면 직접 만들어라!",
     link: "https://gwebgames.github.io/webgames/"
+  },
+     {
+    date: "2026-10-15",
+    title: "수학 문제은행",
+    content: "반 평균 수학 올리기!",
+    link: "https://gwebgames.github.io/mathbank/"
   }
 ];
 
